@@ -1,0 +1,130 @@
+---
+title: "Climate Data Analysis"
+author: "Jayaprakash"
+date: "2025-02-18"
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+
+## Data Exploration & Cleaning
+aq_day_data <- read_csv("Datasets/Air_Quality/city_day.csv")
+
+# Clean Bengaluru air quality data
+clean_bglr_climate_data <- aq_day_data %>% 
+  filter(!is.na(AQI)) %>%
+  filter(!is.na(PM10)) %>%
+  filter(!is.na(Xylene)) %>%
+  filter(City == "Bengaluru") %>%
+  mutate(Date = ymd(Date)) %>% 
+  mutate(Month = month(Date), Year = year(Date), Day = day(Date))
+  show_col_types = FALSE
+
+# Clean Delhi air quality data
+clean_del_climate_data <- aq_day_data %>% 
+  filter(!is.na(AQI_Bucket)) %>%
+  filter(!is.na(PM10)) %>%
+  filter(!is.na(Xylene)) %>%
+  filter(City == "Delhi") %>%
+  mutate(Date = ymd(Date)) %>% 
+  mutate(Month = month(Date), Year = year(Date), Day = day(Date))
+  show_col_types = FALSE
+  
+# Clean Lucknow air quality data
+clean_luc_climate_data <- aq_day_data %>% 
+  filter(!is.na(AQI_Bucket)) %>%
+  filter(!is.na(PM10)) %>%
+  filter(!is.na(Xylene)) %>%
+  filter(City == "Lucknow") %>%
+  mutate(Date = ymd(Date)) %>% 
+  mutate(Month = month(Date), Year = year(Date), Day = day(Date))
+  show_col_types = FALSE
+  
+# Clean Mumbai air quality data
+clean_mum_climate_data <- aq_day_data %>% 
+  filter(!is.na(AQI_Bucket)) %>%
+  filter(!is.na(PM10)) %>%
+  filter(!is.na(Xylene)) %>%
+  filter(City == "Mumbai") %>%
+  mutate(Date = ymd(Date)) %>% 
+  mutate(Month = month(Date), Year = year(Date), Day = day(Date))
+  show_col_types = FALSE
+ 
+```
+```{r}
+# Clean Bengaluru air quality data
+clean_bglr_climate_data <- aq_day_data %>% 
+  filter(!is.na(AQI_Bucket)) %>%
+  filter(City == "Bengaluru") %>%
+  mutate(Date = ymd(Date)) %>% 
+  mutate(Month = month(Date), Year = year(Date), Day = day(Date))
+  show_col_types = FALSE
+
+ggplot(clean_bglr_climate_data, aes(x = Day, y = AQI_Bucket, color = City)) +
+  geom_line() +
+  facet_wrap(~Year) +
+  labs(title = "Daily Air Quality Levels of Bengaluru City from 2015 to 2020", x = "Day", y = "Air Quality")
+```
+
+
+```{r}
+# Clean Chennai air quality data
+clean_che_climate_data <- aq_day_data %>% 
+  filter(!is.na(AQI_Bucket)) %>%
+  filter(City == "Chennai") %>%
+  mutate(Date = ymd(Date)) %>% 
+  mutate(Month = month(Date), Year = year(Date), Day = day(Date))
+  show_col_types = FALSE
+
+ggplot(clean_che_climate_data, aes(x = Day, y = AQI_Bucket, color = City)) +
+  geom_line() +
+  facet_wrap(~Year) +
+  labs(title = "Daily Air Quality Levels of Chennai City from 2015 to 2020", x = "Day", y = "Air Quality")
+```
+
+## Detailed Analysis
+Perform time series analysis on the air quality and climate data to understand the temporal patterns and trends.
+
+```{r}
+library(ggplot2)
+
+clean_aq_data <- clean_bglr_climate_data %>% mutate(City="Bengaluru") %>% mutate(time=as.Date(Date, format="%d-%m-%Y"))
+clean_aq_data <- bind_rows (clean_aq_data, clean_del_climate_data %>% mutate(City="Delhi") %>% mutate(time=as.Date(Date, format="%d-%m-%Y")))
+clean_aq_data <- bind_rows (clean_aq_data, clean_che_climate_data %>% mutate(City="Chennai") %>% mutate(time=as.Date(Date, format="%d-%m-%Y")))
+clean_aq_data <- bind_rows (clean_aq_data, clean_luc_climate_data %>% mutate(City="Lucknow") %>% mutate(time=as.Date(Date, format="%d-%m-%Y")))
+clean_aq_data <- bind_rows (clean_aq_data, clean_mum_climate_data %>% mutate(City="Mumbai") %>% mutate(time=as.Date(Date, format="%d-%m-%Y")))
+
+
+#View(clean_aq_data)
+
+ggplot(data = clean_aq_data,
+  mapping = aes(x = Day, y = AQI_Bucket, color = City)) +
+  geom_line() +
+  facet_grid(rows = vars(City), cols =  vars(Year)) + 
+  labs(title = "Day Air Quality Comparison of Cities from 2015 to 2020", x = "Day", y = "Air Quality")
+
+
+# Time series forecasting for air quality
+# Removing unnecessary columns
+city_day <- city_day %>%
+  select(Date, City, PM2.5, PM10, NO, NO2, NOx, NH3, CO, SO2, O3, Benzene, Toluene, Xylene, AQI)
+
+city_day$Date <- as.Date(city_day$Date, "%Y-%m-%d")
+
+# Handling missing values
+city_day[is.na(city_day)] <- 0
+
+# Convert City Day dataset to time series
+city_day_ts <- ts(city_day$AQI, frequency = 365.25)
+
+city_day_decomp <- decompose(city_day_ts)
+
+# Plot the time series and its decomposition
+autoplot(city_day_decomp) + labs(title = "Seasonal Decomposition of City Day Air Quality Index (AQI)")
+
+# Plot the ACF of the time series
+ggAcf(city_day_ts, lag.max = 365)
+
+```
